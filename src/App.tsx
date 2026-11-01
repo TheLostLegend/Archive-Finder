@@ -61,7 +61,7 @@ export default function App() {
     <div className="min-h-screen bg-slate-950 text-slate-100">
       <header className="sticky top-0 z-10 bg-slate-900/95 backdrop-blur border-b border-slate-800 p-3">
         <form className="flex flex-wrap gap-2 items-center" onSubmit={e => { e.preventDefault(); setPage(1); setQuery(q); }}>
-          <h1 className="font-bold text-lg mr-2">📼 Archive Content Finder</h1>
+          <h1 className="font-bold text-lg mr-2">📼 Archive Video Finder</h1>
           <input className="flex-1 min-w-[200px] bg-slate-800 rounded px-3 py-2" value={q} onChange={e => setQ(e.target.value)} placeholder={`evangelion #anime #"cowboy bebop" ...`} />
           <select className="bg-slate-800 rounded px-2 py-2" value={sort} onChange={e => { setSort(e.target.value); setPage(1); }}>
             <option value="downloads desc">Просмотры ↓</option>

@@ -1,12 +1,320 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Archive Video Finder</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Archive Video Finder</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#020617;color:#f1f5f9;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+a{color:#818cf8}
+button,input,select{font:inherit;color:inherit}
+header{position:sticky;top:0;z-index:10;background:rgba(15,23,42,.95);backdrop-filter:blur(6px);border-bottom:1px solid #1e293b;padding:10px}
+form{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+h1{font-size:18px;margin:0 8px 0 0}
+.inp,select{background:#1e293b;border:0;border-radius:6px;padding:8px 10px}
+#q{flex:1;min-width:200px}
+.btn{background:#1e293b;border:0;border-radius:6px;padding:4px 10px;cursor:pointer}
+.btn:hover{background:#334155}
+.btn.pri,.btn.on{background:#4f46e5}
+.btn.pri:hover{background:#6366f1}
+.btn:disabled{opacity:.4;cursor:default}
+.info{font-size:12px;color:#94a3b8;margin-top:4px}
+main{padding:10px}
+#grid{display:grid;gap:8px}
+.card{aspect-ratio:1/1;overflow:hidden;background:#0f172a;border:1px solid #1e293b;border-radius:8px;padding:8px;display:flex;flex-direction:column;cursor:pointer;text-align:left}
+.card:hover{background:#1e293b}
+.thumb{height:66.666%;flex-shrink:0;background:#000;border-radius:6px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.thumb img{max-width:100%;max-height:100%;object-fit:contain}
+.meta{flex:1;min-height:0;padding-top:4px;display:flex;flex-direction:column;justify-content:space-between}
+.title{font-size:14px;font-weight:600;line-height:1.2;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.stats{font-size:12px;color:#94a3b8;display:flex;flex-wrap:wrap;gap:0 8px}
+.pager{display:flex;justify-content:center;align-items:center;gap:8px;margin:16px 0}
+.pager input{width:64px;text-align:center;background:#1e293b;border:0;border-radius:4px}
+.center{text-align:center;padding:40px}
+.err{color:#f87171}
+#modal{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;padding:12px}
+#modal.show{display:flex}
+.box{background:#0f172a;border:1px solid #334155;border-radius:10px;width:100%;max-width:1000px;max-height:90vh;display:flex;flex-direction:column}
+.mh{padding:12px;border-bottom:1px solid #1e293b;display:flex;gap:8px;align-items:flex-start}
+.mh .grow{flex:1;min-width:0}
+.mtitle{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row{display:flex;gap:8px;align-items:center;margin-top:8px}
+.row .lbl{font-size:12px;color:#94a3b8;white-space:nowrap}
+#base{flex:1;min-width:0;font-family:monospace;font-size:13px;padding:5px 8px}
+.close{background:none;border:0;font-size:26px;cursor:pointer;padding:0 8px}
+.tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
+.tag{font-size:12px;background:#1e293b;border:0;border-radius:999px;padding:2px 8px;cursor:pointer}
+.tag:hover{background:#4338ca}
+.desc{font-size:12px;color:#94a3b8;margin-top:8px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.servers{font-size:12px;color:#64748b;margin-top:4px}
+.servers button{background:none;border:0;text-decoration:underline;cursor:pointer;color:#cbd5e1;margin-right:8px}
+.servers button.cur{color:#4ade80}
+.bar{padding:8px;display:flex;flex-wrap:wrap;gap:6px;font-size:14px;border-bottom:1px solid #1e293b}
+.bar .sp{flex:1}
+.files{overflow:auto;padding:8px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+td{padding:4px;border-bottom:1px solid #1e293b}
+td.n{word-break:break-all}
+td.s{color:#94a3b8;white-space:nowrap}
+td.o{color:#64748b;white-space:nowrap}
+tr:hover{background:rgba(30,41,59,.5)}
+</style>
+</head>
+<body>
+<header>
+  <form id="f">
+    <h1>📼 Archive Video Finder</h1>
+    <input id="q" class="inp" value="anime" placeholder='evangelion #anime #"cowboy bebop" ...'>
+    <select id="sort">
+      <option value="downloads desc">Просмотры ↓</option>
+      <option value="downloads asc">Просмотры ↑</option>
+      <option value="publicdate desc">Дата публикации ↓</option>
+      <option value="publicdate asc">Дата публикации ↑</option>
+      <option value="item_size desc">Размер ↓</option>
+      <option value="item_size asc">Размер ↑</option>
+    </select>
+    <select id="safe">
+      <option value="sfw">SFW</option>
+      <option value="nsfw">NSFW</option>
+      <option value="all">Все</option>
+    </select>
+    <button class="btn pri" style="padding:8px 16px">Найти</button>
+  </form>
+  <div class="info" id="info"></div>
+</header>
+<main>
+  <div id="status"></div>
+  <div id="grid"></div>
+  <div class="pager">
+    <button class="btn" id="first">«</button>
+    <button class="btn" id="prev">‹</button>
+    <span>Стр. <input type="number" id="pg" min="1" value="1"> / <span id="pages">1</span></span>
+    <button class="btn" id="next">›</button>
+    <button class="btn" id="last">»</button>
+  </div>
+</main>
+
+<div id="modal">
+  <div class="box" onclick="event.stopPropagation()">
+    <div class="mh">
+      <div class="grow">
+        <div class="mtitle" id="mtitle"></div>
+        <div class="row">
+          <span class="lbl">Folder base URL</span>
+          <input id="base" class="inp" readonly>
+          <button class="btn pri" id="copyBase">Copy</button>
+          <a id="details" target="_blank" style="font-size:14px">details</a>
+        </div>
+        <div class="servers" id="servers"></div>
+        <div class="tags" id="tags"></div>
+        <div class="desc" id="desc"></div>
+      </div>
+      <button class="close" id="close">×</button>
+    </div>
+    <div class="bar" id="bar"></div>
+    <div class="files" id="files"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+const ROWS = 20;
+const VIDEO = /\.(mp4|mkv|avi|webm|m4v|mov|ogv|mpg|mpeg|wmv|flv|ts)$/i;
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+const st = { query: "anime", sort: "downloads desc", safe: "sfw", page: 1, total: 0, cols: calcCols() };
+
+// URL hash state
+try {
+  const h = new URLSearchParams(location.hash.slice(1));
+  if (h.has("q")) st.query = h.get("q");
+  if (h.has("s")) st.sort = h.get("s");
+  if (h.has("f")) st.safe = h.get("f");
+  if (h.has("p")) st.page = Math.max(1, +h.get("p") || 1);
+} catch(e){}
+$("q").value = st.query; $("sort").value = st.sort; $("safe").value = st.safe;
+
+function calcCols(){ return Math.max(2, Math.floor(window.innerWidth / 220)); }
+function perPage(){ return ROWS * st.cols; }
+
+function fmtSize(n){
+  let x = Number(n || 0); if (!x) return "—";
+  const u = ["B","KB","MB","GB","TB"]; let i = 0;
+  while (x >= 1024 && i < 4){ x /= 1024; i++; }
+  return x.toFixed(1) + " " + u[i];
+}
+
+function copy(text, btn){
+  const done = () => { const t = btn.textContent; btn.textContent = "✓"; setTimeout(() => btn.textContent = t, 1200); };
+  if (navigator.clipboard) navigator.clipboard.writeText(text).then(done, () => fallback());
+  else fallback();
+  function fallback(){ const ta = document.createElement("textarea"); ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); ta.remove(); done(); }
+}
+
+function buildQuery(){
+  const tags = [];
+  const rest = (st.query || "").replace(/#("[^"]+"|\S+)/g, (_, t) => { tags.push(t.replace(/"/g, "")); return " "; }).trim();
+  const parts = [`(${rest || "*"})`, "mediatype:movies"];
+  tags.forEach(t => parts.push(`subject:"${t.replace(/_/g, " ")}"`));
+  if (st.safe === "sfw") parts.push("NOT collection:no-preview AND NOT subject:(nsfw OR hentai OR adult OR porn OR xxx)");
+  if (st.safe === "nsfw") parts.push("(collection:no-preview OR subject:(nsfw OR hentai OR adult OR xxx OR porn))");
+  return parts.join(" AND ");
+}
+
+let reqId = 0;
+async function search(){
+  const id = ++reqId;
+  history.replaceState(null, "", "#" + new URLSearchParams({ q: st.query, s: st.sort, f: st.safe, p: st.page }));
+  const p = new URLSearchParams({ q: buildQuery(), rows: perPage(), page: st.page, output: "json" });
+  ["identifier","title","downloads","publicdate","addeddate","item_size"].forEach(f => p.append("fl[]", f));
+  p.append("sort[]", st.sort);
+  $("status").innerHTML = '<div class="center">Загрузка…</div>';
+  $("grid").innerHTML = "";
+  try {
+    const r = await fetch("https://archive.org/advancedsearch.php?" + p);
+    const d = await r.json();
+    if (id !== reqId) return;
+    st.total = d.response.numFound;
+    render(d.response.docs);
+    $("status").innerHTML = d.response.docs.length ? "" : '<div class="center">Ничего не найдено</div>';
+  } catch(e){
+    if (id !== reqId) return;
+    $("status").innerHTML = '<div class="err">Ошибка: ' + esc(e) + '</div>';
+  }
+  updatePager();
+}
+
+function render(docs){
+  const g = $("grid");
+  g.style.gridTemplateColumns = `repeat(${st.cols}, minmax(0,1fr))`;
+  g.innerHTML = docs.map(d => `
+    <div class="card" data-id="${esc(d.identifier)}" data-title="${esc(d.title || d.identifier)}">
+      <div class="thumb"><img loading="lazy" src="https://archive.org/services/img/${encodeURIComponent(d.identifier)}" alt=""></div>
+      <div class="meta">
+        <div class="title" title="${esc(d.title)}">${esc(d.title || d.identifier)}</div>
+        <div class="stats">
+          <span>👁 ${(d.downloads || 0).toLocaleString()}</span>
+          <span>📅 ${esc((d.publicdate || d.addeddate || "").slice(0,10))}</span>
+          <span>💾 ${fmtSize(d.item_size)}</span>
+        </div>
+      </div>
+    </div>`).join("");
+}
+
+function updatePager(){
+  const pages = Math.max(1, Math.ceil(st.total / perPage()));
+  $("pages").textContent = pages;
+  $("pg").value = st.page; $("pg").max = pages;
+  $("first").disabled = $("prev").disabled = st.page <= 1;
+  $("next").disabled = $("last").disabled = st.page >= pages;
+  $("info").textContent = `Найдено: ${st.total.toLocaleString()} · ${st.cols} кол. × ${ROWS} строк = ${perPage()}/стр.`;
+}
+function go(p){
+  const pages = Math.max(1, Math.ceil(st.total / perPage()));
+  st.page = Math.min(pages, Math.max(1, p)); search(); window.scrollTo(0,0);
+}
+
+$("f").onsubmit = e => { e.preventDefault(); st.query = $("q").value; st.page = 1; search(); };
+$("sort").onchange = e => { st.sort = e.target.value; st.page = 1; search(); };
+$("safe").onchange = e => { st.safe = e.target.value; st.page = 1; search(); };
+$("first").onclick = () => go(1);
+$("prev").onclick = () => go(st.page - 1);
+$("next").onclick = () => go(st.page + 1);
+$("last").onclick = () => go(Infinity);
+$("pg").onchange = e => go(+e.target.value || 1);
+$("grid").onclick = e => { const c = e.target.closest(".card"); if (c) openFolder(c.dataset.id, c.dataset.title); };
+
+let rt;
+window.addEventListener("resize", () => {
+  clearTimeout(rt);
+  rt = setTimeout(() => {
+    const c = calcCols();
+    if (c !== st.cols){ const first = (st.page - 1) * perPage(); st.cols = c; st.page = Math.floor(first / perPage()) + 1; search(); }
+  }, 300);
+});
+
+// ---------- Folder modal ----------
+const fs = { id: "", files: [], server: "", dir: "", servers: [], ext: "video" };
+const extOf = n => ((n.match(/\.([a-z0-9]+)$/i) || [])[1] || "—").toLowerCase();
+const encPath = f => f.split("/").map(encodeURIComponent).join("/");
+const baseUrl = () => `https://${fs.server}${fs.dir}/`;
+const direct = f => baseUrl() + encPath(f);
+const stable = f => `https://archive.org/download/${fs.id}/${encPath(f)}`;
+const visible = () => fs.files.filter(f => fs.ext === "all" ? true : fs.ext === "video" ? VIDEO.test(f.name) : extOf(f.name) === fs.ext);
+
+async function openFolder(id, title){
+  Object.assign(fs, { id, files: [], server: "archive.org", dir: "/download/" + id, servers: [], ext: "video" });
+  $("mtitle").textContent = title;
+  $("details").href = "https://archive.org/details/" + encodeURIComponent(id);
+  $("tags").innerHTML = ""; $("desc").textContent = ""; $("servers").innerHTML = ""; $("bar").innerHTML = "";
+  $("files").innerHTML = "Загрузка…";
+  $("base").value = baseUrl();
+  $("modal").classList.add("show");
+  try {
+    const m = await (await fetch("https://archive.org/metadata/" + encodeURIComponent(id))).json();
+    if (fs.id !== id) return;
+    fs.files = m.files || [];
+    fs.server = m.d1 || m.server || "archive.org";
+    fs.dir = m.dir || "/download/" + id;
+    fs.servers = [m.d1, m.d2, ...(m.workable_servers || [])].filter((x,i,a) => x && a.indexOf(x) === i);
+    const sj = m.metadata && m.metadata.subject;
+    const tags = (Array.isArray(sj) ? sj : sj ? String(sj).split(/[;,]/) : []).map(x => String(x).trim()).filter(Boolean);
+    $("tags").innerHTML = tags.map(t => `<button class="tag" data-t="${esc(t)}">#${esc(t)}</button>`).join("");
+    let desc = m.metadata && m.metadata.description;
+    if (Array.isArray(desc)) desc = desc.join(" ");
+    $("desc").textContent = String(desc || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 600);
+    if (!fs.files.some(f => VIDEO.test(f.name))) fs.ext = "all";
+    renderFolder();
+  } catch(e){
+    $("files").innerHTML = '<span class="err">Ошибка: ' + esc(e) + '</span>';
+  }
+}
+
+function renderFolder(){
+  $("base").value = baseUrl();
+  $("servers").innerHTML = fs.servers.length > 1 ? "Серверы: " + fs.servers.map(s => `<button data-s="${esc(s)}" class="${s === fs.server ? "cur" : ""}">${esc(s)}</button>`).join("") : "";
+  const exts = [...new Set(fs.files.map(f => extOf(f.name)))].sort();
+  $("bar").innerHTML = ["all","video",...exts].map(x => `<button class="btn ${fs.ext === x ? "on" : ""}" data-e="${esc(x)}">${x === "all" ? "Все" : x === "video" ? "Видео" : esc(x)}</button>`).join("")
+    + '<span class="sp"></span>'
+    + '<button class="btn" data-c="direct">Копировать все прямые</button>'
+    + '<button class="btn" data-c="stable">Копировать все archive.org/download</button>'
+    + '<button class="btn" data-c="wget">wget скрипт</button>';
+  const list = visible();
+  $("files").innerHTML = !list.length ? "Нет файлов" : "<table><tbody>" + list.map((f,i) => `
+    <tr>
+      <td class="n"><a target="_blank" href="${esc(direct(f.name))}">${esc(f.name)}</a></td>
+      <td class="s">${fmtSize(f.size)}</td>
+      <td class="o">${esc(f.source || "")}</td>
+      <td class="s"><button class="btn" style="font-size:12px" data-i="${i}">copy</button></td>
+    </tr>`).join("") + "</tbody></table>";
+}
+
+$("bar").onclick = e => {
+  const b = e.target.closest("button"); if (!b) return;
+  if (b.dataset.e){ fs.ext = b.dataset.e; renderFolder(); return; }
+  const list = visible();
+  if (b.dataset.c === "direct") copy(list.map(f => direct(f.name)).join("\n"), b);
+  if (b.dataset.c === "stable") copy(list.map(f => stable(f.name)).join("\n"), b);
+  if (b.dataset.c === "wget") copy(list.map(f => `wget -c "${stable(f.name)}"`).join("\n"), b);
+};
+$("files").onclick = e => { const b = e.target.closest("button[data-i]"); if (b) copy(direct(visible()[+b.dataset.i].name), b); };
+$("servers").onclick = e => { const b = e.target.closest("button[data-s]"); if (b){ fs.server = b.dataset.s; renderFolder(); } };
+$("tags").onclick = e => {
+  const b = e.target.closest(".tag"); if (!b) return;
+  const t = b.dataset.t; const v = "#" + (/\s/.test(t) ? `"${t}"` : t);
+  $("q").value = st.query = v; st.page = 1; closeModal(); search();
+};
+$("copyBase").onclick = e => copy($("base").value, e.target);
+$("base").onfocus = e => e.target.select();
+function closeModal(){ $("modal").classList.remove("show"); fs.id = ""; }
+$("close").onclick = closeModal;
+$("modal").onclick = closeModal;
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeModal(); });
+
+search();
+})();
+</script>
+</body>
 </html>
